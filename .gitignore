@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment files (forkers must configure their own)
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Ollama generated artifacts (keep config, not outputs)
+src/core/ollama-output/
+task_status.json
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Test artifacts
+coverage/
