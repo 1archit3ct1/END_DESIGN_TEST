@@ -1,0 +1,390 @@
+/* OAuth Component Styles */
+
+/* Provider Grid */
+.provider-grid {
+  padding: 20px;
+}
+
+.provider-grid-header {
+  margin-bottom: 20px;
+}
+
+.provider-grid-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.provider-grid-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.provider-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.provider-card-wrapper {
+  min-width: 0;
+}
+
+/* Provider Card */
+.provider-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.provider-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.provider-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.provider-logo {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.provider-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.provider-logo-fallback {
+  width: 48px;
+  height: 48px;
+  background: var(--surface);
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.connected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.connect-button {
+  padding: 6px 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.connect-button:hover {
+  background: #00ffb3;
+  transform: translateY(-1px);
+}
+
+.provider-card-body {
+  margin-bottom: 12px;
+}
+
+.provider-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.provider-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.disconnect-button {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.disconnect-button:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.provider-scope-container {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+/* Scope Selector */
+.scope-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scope-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.scope-toggles {
+  display: flex;
+  gap: 12px;
+}
+
+.scope-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.scope-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.scope-name {
+  user-select: none;
+}
+
+/* Workflow Gate */
+.workflow-gate {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px;
+}
+
+.workflow-gate-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.gate-icon {
+  font-size: 24px;
+}
+
+.gate-icon.locked {
+  opacity: 0.5;
+}
+
+.gate-icon.unlocked {
+  opacity: 1;
+}
+
+.gate-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.workflow-gate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.requirements-checklist {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.checklist-title {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.checklist-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text);
+  transition: all 0.15s;
+}
+
+.checklist-item.connected {
+  background: rgba(0, 229, 160, 0.1);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+}
+
+.checkmark {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.checklist-item:not(.connected) .checkmark {
+  color: var(--muted);
+}
+
+.checklist-item.connected .checkmark {
+  color: var(--accent);
+}
+
+.provider-name {
+  flex: 1;
+}
+
+.gate-message {
+  text-align: center;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.gate-message p {
+  margin: 0;
+}
+
+.unlock-button {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.unlock-button:hover {
+  background: #00ffb3;
+  transform: translateY(-1px);
+}
+
+/* Connection Status */
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 8px 0;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: all 0.2s;
+}
+
+.live-dot.live {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 229, 160, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.live-dot.offline {
+  background: var(--danger);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-text {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.status-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.last-synced {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.disconnect-btn {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.disconnect-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}

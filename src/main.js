@@ -12,18 +12,105 @@ import {
   clearOutput,
 } from './core/renderer.js'
 import { downloadText, downloadBundle } from './core/exporter.js'
+import { writeTaskStatus } from './core/task-status.js'
+import { connectProvider } from './core/oauth.js'
+import { handleCallback, getToken } from './core/oauth-callback.js'
+import { revokeToken } from './core/oauth-revoke.js'
+import { syncStatus } from './core/status-sync.js'
+import { checkGate } from './core/workflow-gate.js'
+import { expireCredentials, setupWindowCloseExpiry } from './core/credential-lifetime.js'
 
 // ── STATE ─────────────────────────────────────────────────────────────
 let currentLayers = []
 let currentComponents = []
+let statusPollers = {}
 
 // ── BOOT ──────────────────────────────────────────────────────────────
 document.getElementById('app').innerHTML = buildLayout()
+
+// Setup credential expiry on window close
+setupWindowCloseExpiry()
 
 // Wire node select → show node output in right panel
 setNodeSelectHandler(node => {
   renderNodeOutput(node, currentComponents)
 })
+
+// ── TASK STATUS WRITER ─────────────────────────────────────────────────
+export function onProviderConnect(providerId) {
+  writeTaskStatus({
+    event: 'provider_connect',
+    provider: providerId,
+    timestamp: new Date().toISOString()
+  })
+}
+
+export function onProviderRevoke(providerId) {
+  writeTaskStatus({
+    event: 'provider_revoke',
+    provider: providerId,
+    timestamp: new Date().toISOString()
+  })
+}
+
+// ── OAUTH HANDLERS ─────────────────────────────────────────────────────
+export async function handleOAuthConnect(providerId, scopes = []) {
+  try {
+    await connectProvider(providerId, scopes)
+    onProviderConnect(providerId)
+  } catch (error) {
+    console.error('OAuth connect error:', error)
+  }
+}
+
+export async function handleOAuthCallback(providerId, code, state) {
+  try {
+    const result = await handleCallback(providerId, code, state)
+    startStatusPolling(providerId)
+    return result
+  } catch (error) {
+    console.error('OAuth callback error:', error)
+    throw error
+  }
+}
+
+export async function handleOAuthRevoke(providerId) {
+  try {
+    await revokeToken(providerId)
+    stopStatusPolling(providerId)
+    onProviderRevoke(providerId)
+  } catch (error) {
+    console.error('OAuth revoke error:', error)
+  }
+}
+
+export async function handleOAuthDisconnect(providerId) {
+  await handleOAuthRevoke(providerId)
+}
+
+// ── STATUS POLLING ─────────────────────────────────────────────────────
+export function startStatusPolling(providerId) {
+  if (statusPollers[providerId]) return
+  const stop = syncStatus(providerId, { interval: 30000 })
+  statusPollers[providerId] = stop
+}
+
+export function stopStatusPolling(providerId) {
+  if (statusPollers[providerId]) {
+    statusPollers[providerId]()
+    delete statusPollers[providerId]
+  }
+}
+
+// ── WORKFLOW GATE ──────────────────────────────────────────────────────
+export function checkWorkflowGate(requiredProviders = ['google']) {
+  return checkGate(requiredProviders)
+}
+
+// ── CREDENTIAL EXPIRY ──────────────────────────────────────────────────
+export function handleCredentialExpiry() {
+  expireCredentials()
+}
 
 // ── INGEST ─────────────────────────────────────────────────────────────
 function ingest() {
