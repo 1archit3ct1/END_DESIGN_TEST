@@ -38,6 +38,12 @@ class PathResolver:
         'oauth_integration.callback_server': 'src/oauth/callback_server.ts',
         'oauth_integration.token_keychain': 'src/oauth/token_keychain.ts',
         'oauth_integration.provider_catalog': 'src/oauth/provider_catalog.ts',
+        'phase10.task_153': 'agent/orchestration_multi.py',
+        'phase10.task_154': 'src/core/figma_importer.js',
+        'phase10.task_155': 'src/components/DiffViewer.jsx',
+        'phase10.task_156': 'src/components/LLMConfig.jsx',
+        'phase10.task_157': 'agent/mcp_client.py',
+        'phase10.task_158': 'agent/cost_analyzer.py',
     }
 
     def __init__(self, output_dir: Optional[Path] = None):

@@ -210,7 +210,7 @@ class FileWriter:
         return header
 
     def _get_file_path(self, task: Dict[str, Any]) -> Optional[Path]:
-        """Get file path for task.
+        """Get file path for task Using PathResolver.
         
         Args:
             task: Task dictionary
@@ -218,28 +218,9 @@ class FileWriter:
         Returns:
             File path or None
         """
-        task_id = task.get('id', '')
-        layer = task.get('layer', 'general')
-
-        # Map task ID to file path
-        if 'rust_backend' in task_id:
-            return self.output_dir / 'src-tauri' / 'src' / f"{self._slugify(task_id)}.rs"
-        elif 'oauth_integration' in task_id:
-            return self.output_dir / 'src' / 'oauth' / f"{self._slugify(task_id)}.ts"
-        elif 'step1' in task_id:
-            return self.output_dir / 'src' / 'components' / 'step1' / f"{self._slugify(task_id)}.tsx"
-        elif 'step2' in task_id:
-            return self.output_dir / 'src' / 'components' / 'step2' / f"{self._slugify(task_id)}.tsx"
-        elif 'step3' in task_id:
-            return self.output_dir / 'src' / 'components' / 'step3' / f"{self._slugify(task_id)}.tsx"
-        elif 'step4' in task_id:
-            return self.output_dir / 'src' / 'components' / 'step4' / f"{self._slugify(task_id)}.tsx"
-        elif 'step5' in task_id:
-            return self.output_dir / 'src' / 'components' / 'step5' / f"{self._slugify(task_id)}.tsx"
-        elif 'step6' in task_id:
-            return self.output_dir / 'src' / 'components' / 'step6' / f"{self._slugify(task_id)}.tsx"
-        else:
-            return self.output_dir / 'src' / 'lib' / f"{self._slugify(task_id)}.ts"
+        from .path_resolver import PathResolver
+        resolver = PathResolver(self.output_dir)
+        return resolver.resolve_path(task)
 
     def _slugify(self, text: str) -> str:
         """Convert text to safe filename.
