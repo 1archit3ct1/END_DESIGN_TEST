@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "ingest": "node src/cli/ingest.js",
     "generate": "node src/cli/generate.js",
+    "extract": "node src/cli/extract.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
