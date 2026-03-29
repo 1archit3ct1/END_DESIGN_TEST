@@ -38,3 +38,13 @@ temp/
 
 # Test artifacts
 coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+agent.log
+pytest_cache/
+.pytest_cache/
