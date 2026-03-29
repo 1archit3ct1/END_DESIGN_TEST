@@ -121,11 +121,11 @@ class StateManager:
 
     def mark_task_blocked(self, task_id: str, error: str) -> bool:
         """Mark task as blocked.
-        
+
         Args:
             task_id: Task ID
             error: Error message
-            
+
         Returns:
             True if updated successfully
         """
@@ -140,13 +140,62 @@ class StateManager:
 
         return self.save_tasks(tasks)
 
+    def mark_task_skipped(self, task_id: str, reason: str = '') -> bool:
+        """Mark task as skipped.
+
+        Args:
+            task_id: Task ID
+            reason: Reason for skipping
+
+        Returns:
+            True if updated successfully
+        """
+        tasks = self.load_tasks()
+        for task in tasks:
+            if task['id'] == task_id:
+                task['status'] = 'skipped'
+                task['result'] = reason
+                task['updatedAt'] = datetime.now().isoformat()
+                break
+
+        return self.save_tasks(tasks)
+
+    def mark_task_failed(self, task_id: str, error: str = '') -> bool:
+        """Mark task as failed.
+
+        Args:
+            task_id: Task ID
+            error: Error message
+
+        Returns:
+            True if updated successfully
+        """
+        tasks = self.load_tasks()
+        for task in tasks:
+            if task['id'] == task_id:
+                task['status'] = 'failed'
+                task['result'] = error
+                task['updatedAt'] = datetime.now().isoformat()
+                break
+
+        return self.save_tasks(tasks)
+
+    def get_failed_tasks(self) -> list:
+        """Get list of failed or blocked tasks.
+
+        Returns:
+            List of failed/blocked task dictionaries
+        """
+        tasks = self.load_tasks()
+        return [t for t in tasks if t.get('status') in ('failed', 'blocked')]
+
     def _update_task_status(self, task_id: str, status: str) -> bool:
         """Update task status.
-        
+
         Args:
             task_id: Task ID
             status: New status
-            
+
         Returns:
             True if updated successfully
         """
@@ -161,7 +210,7 @@ class StateManager:
 
     def finalize_build(self) -> bool:
         """Finalize build and mark as complete.
-        
+
         Returns:
             True if finalized successfully
         """
@@ -181,3 +230,192 @@ class StateManager:
         except Exception as e:
             logger.error(f"Failed to finalize build: {e}")
             return False
+
+    def save_checkpoint(self, checkpoint_name: str = 'auto') -> bool:
+        """Save current state as checkpoint.
+
+        Args:
+            checkpoint_name: Name for checkpoint (default: 'auto')
+
+        Returns:
+            True if saved successfully
+        """
+        try:
+            if not self.path.exists():
+                return False
+
+            # Create checkpoints directory
+            checkpoint_dir = self.path.parent / 'checkpoints'
+            checkpoint_dir.mkdir(exist_ok=True)
+
+            # Generate checkpoint filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            checkpoint_path = checkpoint_dir / f'checkpoint_{checkpoint_name}_{timestamp}.json'
+
+            # Copy current state
+            with open(self.path, 'r') as f:
+                data = json.load(f)
+
+            # Add checkpoint metadata
+            data['checkpoint'] = {
+                'name': checkpoint_name,
+                'created_at': datetime.now().isoformat(),
+                'source': str(self.path)
+            }
+
+            with open(checkpoint_path, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            logger.info(f"Checkpoint saved: {checkpoint_path}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save checkpoint: {e}")
+            return False
+
+    def load_checkpoint(self, checkpoint_name: str = 'latest') -> bool:
+        """Load state from checkpoint.
+
+        Args:
+            checkpoint_name: Name of checkpoint to load ('latest' for most recent)
+
+        Returns:
+            True if loaded successfully
+        """
+        try:
+            checkpoint_dir = self.path.parent / 'checkpoints'
+
+            if not checkpoint_dir.exists():
+                logger.warning("No checkpoints directory found")
+                return False
+
+            # Find checkpoint file
+            if checkpoint_name == 'latest':
+                checkpoints = sorted(checkpoint_dir.glob('checkpoint_*.json'),
+                                     key=lambda p: p.stat().st_mtime, reverse=True)
+                if not checkpoints:
+                    logger.warning("No checkpoints found")
+                    return False
+                checkpoint_path = checkpoints[0]
+            else:
+                # Find specific checkpoint
+                checkpoints = list(checkpoint_dir.glob(f'checkpoint_{checkpoint_name}_*.json'))
+                if not checkpoints:
+                    logger.warning(f"Checkpoint '{checkpoint_name}' not found")
+                    return False
+                checkpoint_path = checkpoints[0]
+
+            # Load checkpoint
+            with open(checkpoint_path, 'r') as f:
+                data = json.load(f)
+
+            # Restore state (remove checkpoint metadata)
+            if 'checkpoint' in data:
+                del data['checkpoint']
+
+            with open(self.path, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            logger.info(f"Checkpoint loaded: {checkpoint_path}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to load checkpoint: {e}")
+            return False
+
+    def list_checkpoints(self) -> list:
+        """List available checkpoints.
+
+        Returns:
+            List of checkpoint metadata dictionaries
+        """
+        checkpoints = []
+        checkpoint_dir = self.path.parent / 'checkpoints'
+
+        if not checkpoint_dir.exists():
+            return checkpoints
+
+        for checkpoint_path in sorted(checkpoint_dir.glob('checkpoint_*.json'),
+                                       key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                with open(checkpoint_path, 'r') as f:
+                    data = json.load(f)
+
+                checkpoint_info = data.get('checkpoint', {})
+                checkpoints.append({
+                    'name': checkpoint_info.get('name', 'unknown'),
+                    'created_at': checkpoint_info.get('created_at', ''),
+                    'path': str(checkpoint_path),
+                    'task_count': len(data.get('tasks', [])),
+                    'completed': sum(1 for t in data.get('tasks', []) if t.get('status') == 'done')
+                })
+            except Exception as e:
+                logger.warning(f"Failed to read checkpoint {checkpoint_path}: {e}")
+
+        return checkpoints
+
+    def delete_checkpoint(self, checkpoint_name: str) -> bool:
+        """Delete a checkpoint.
+
+        Args:
+            checkpoint_name: Name of checkpoint to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        try:
+            checkpoint_dir = self.path.parent / 'checkpoints'
+
+            if not checkpoint_dir.exists():
+                return False
+
+            # Find and delete checkpoint
+            checkpoints = list(checkpoint_dir.glob(f'checkpoint_{checkpoint_name}_*.json'))
+            if not checkpoints:
+                return False
+
+            for checkpoint_path in checkpoints:
+                checkpoint_path.unlink()
+                logger.info(f"Checkpoint deleted: {checkpoint_path}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to delete checkpoint: {e}")
+            return False
+
+    def resume_build(self) -> bool:
+        """Resume build from latest checkpoint.
+
+        Returns:
+            True if resumed successfully
+        """
+        return self.load_checkpoint('latest')
+
+    def get_resume_info(self) -> Dict[str, Any]:
+        """Get information about resumable build.
+
+        Returns:
+            Dictionary with resume information
+        """
+        checkpoints = self.list_checkpoints()
+
+        if not checkpoints:
+            return {
+                'can_resume': False,
+                'message': 'No checkpoints available'
+            }
+
+        latest = checkpoints[0]
+        tasks = self.load_tasks()
+        pending = sum(1 for t in tasks if t.get('status') in ('pending', 'running'))
+        failed = sum(1 for t in tasks if t.get('status') in ('failed', 'blocked'))
+
+        return {
+            'can_resume': True,
+            'latest_checkpoint': latest,
+            'total_checkpoints': len(checkpoints),
+            'pending_tasks': pending,
+            'failed_tasks': failed,
+            'message': f"Can resume from {latest['created_at']} ({latest['completed']} tasks completed)"
+        }

@@ -16,6 +16,10 @@ function BuildConsole({
   completedTasks = 0,
   totalTasks = 0,
   generatedFiles = 0,
+  onSkipTask,
+  onRetryFailedTasks,
+  failedTasks = [],
+  currentTaskId = null,
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const logsEndRef = useRef(null);
@@ -48,6 +52,18 @@ function BuildConsole({
   const handleStopClick = () => {
     if (onBuildStop) {
       onBuildStop();
+    }
+  };
+
+  const handleSkipTaskClick = () => {
+    if (onSkipTask && currentTaskId) {
+      onSkipTask(currentTaskId);
+    }
+  };
+
+  const handleRetryFailedTasksClick = () => {
+    if (onRetryFailedTasks) {
+      onRetryFailedTasks();
     }
   };
 
@@ -106,6 +122,36 @@ function BuildConsole({
               data-testid="stop-build-button"
             >
               ⏹ Stop
+            </button>
+          )}
+
+          {/* Skip Task Button - only show when there's a current task */}
+          {currentTaskId && buildStatus === 'running' && (
+            <button
+              className="btn btn-skip"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSkipTaskClick();
+              }}
+              data-testid="skip-task-button"
+              title="Skip current task"
+            >
+              ⏭ Skip Task
+            </button>
+          )}
+
+          {/* Retry Failed Tasks Button - only show when there are failed tasks */}
+          {failedTasks && failedTasks.length > 0 && (
+            <button
+              className="btn btn-retry"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRetryFailedTasksClick();
+              }}
+              data-testid="retry-failed-tasks-button"
+              title={`Retry ${failedTasks.length} failed task(s)`}
+            >
+              🔄 Retry ({failedTasks.length})
             </button>
           )}
 
@@ -196,6 +242,14 @@ BuildConsole.propTypes = {
   totalTasks: PropTypes.number,
   /** Number of files generated */
   generatedFiles: PropTypes.number,
+  /** Callback when skip task is clicked */
+  onSkipTask: PropTypes.func,
+  /** Callback when retry failed tasks is clicked */
+  onRetryFailedTasks: PropTypes.func,
+  /** List of failed tasks */
+  failedTasks: PropTypes.arrayOf(PropTypes.object),
+  /** Current task ID */
+  currentTaskId: PropTypes.string,
 };
 
 export default BuildConsole;

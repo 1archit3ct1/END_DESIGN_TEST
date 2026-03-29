@@ -234,6 +234,76 @@ export function testBuildConsoleHasLogs() {
   return true
 }
 
+export function testBuildConsoleHasSkipTaskButton() {
+  const buildConsoleSource = readFileSync(
+    join(__dirname, '../src/components/BuildConsole.jsx'),
+    'utf-8'
+  )
+
+  // Check for Skip Task button
+  if (!buildConsoleSource.includes('Skip Task') && !buildConsoleSource.includes('⏭')) {
+    throw new Error('BuildConsole.jsx missing Skip Task button')
+  }
+
+  // Check for skip task testid
+  if (!buildConsoleSource.includes('data-testid="skip-task-button"')) {
+    throw new Error('BuildConsole.jsx missing skip-task-button testid')
+  }
+
+  // Check for onSkipTask prop
+  if (!buildConsoleSource.includes('onSkipTask')) {
+    throw new Error('BuildConsole.jsx missing onSkipTask prop')
+  }
+
+  // Check for currentTaskId prop (needed for skip functionality)
+  if (!buildConsoleSource.includes('currentTaskId')) {
+    throw new Error('BuildConsole.jsx missing currentTaskId prop')
+  }
+
+  // Check for handleSkipTaskClick handler
+  if (!buildConsoleSource.includes('handleSkipTaskClick')) {
+    throw new Error('BuildConsole.jsx missing handleSkipTaskClick handler')
+  }
+
+  console.log('✓ BuildConsole.jsx has Skip Task button')
+  return true
+}
+
+export function testBuildConsoleHasRetryFailedTasksButton() {
+  const buildConsoleSource = readFileSync(
+    join(__dirname, '../src/components/BuildConsole.jsx'),
+    'utf-8'
+  )
+
+  // Check for Retry Failed Tasks button
+  if (!buildConsoleSource.includes('Retry') && !buildConsoleSource.includes('🔄')) {
+    throw new Error('BuildConsole.jsx missing Retry Failed Tasks button')
+  }
+
+  // Check for retry failed tasks testid
+  if (!buildConsoleSource.includes('data-testid="retry-failed-tasks-button"')) {
+    throw new Error('BuildConsole.jsx missing retry-failed-tasks-button testid')
+  }
+
+  // Check for onRetryFailedTasks prop
+  if (!buildConsoleSource.includes('onRetryFailedTasks')) {
+    throw new Error('BuildConsole.jsx missing onRetryFailedTasks prop')
+  }
+
+  // Check for failedTasks prop
+  if (!buildConsoleSource.includes('failedTasks')) {
+    throw new Error('BuildConsole.jsx missing failedTasks prop')
+  }
+
+  // Check for handleRetryFailedTasksClick handler
+  if (!buildConsoleSource.includes('handleRetryFailedTasksClick')) {
+    throw new Error('BuildConsole.jsx missing handleRetryFailedTasksClick handler')
+  }
+
+  console.log('✓ BuildConsole.jsx has Retry Failed Tasks button')
+  return true
+}
+
 export function testBuildConsolePropTypes() {
   const buildConsoleSource = readFileSync(
     join(__dirname, '../src/components/BuildConsole.jsx'),
@@ -325,6 +395,8 @@ export function runBuildConsoleTests() {
   testBuildConsoleHasProgressDisplay()
   testBuildConsoleHasFileCount()
   testBuildConsoleHasLogs()
+  testBuildConsoleHasSkipTaskButton()
+  testBuildConsoleHasRetryFailedTasksButton()
   testBuildConsolePropTypes()
   testBuildConsoleCSS()
   console.log('\n✅ All BuildConsole tests passed!')
