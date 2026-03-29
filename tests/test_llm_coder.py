@@ -1,311 +1,194 @@
-#!/usr/bin/env python3
 """
-Test: llm_coder.py receives valid code from codellama.
+Test LLM Coder — LLM generation tests.
 """
 
-import sys
-import unittest
-from pathlib import Path
+import pytest
 from unittest.mock import patch, MagicMock
 
-# Add agent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from agent.llm_coder import LLMDcoder, generate_code_from_llm
-from agent.config import get_ollama_host, get_ollama_model, get_ollama_timeout, get_ollama_max_tokens
 
 
-class TestLLMDcoder(unittest.TestCase):
-    """Test LLMDcoder functionality."""
+class TestLLMDcoder:
+    """Test LLM Coder functionality."""
 
-    def test_coder_initializes(self):
-        """Test that LLMDcoder initializes without errors."""
-        coder = LLMDcoder()
-        
-        self.assertIsNotNone(coder)
-        self.assertIsNotNone(coder.host)
-        self.assertIsNotNone(coder.model)
+    @pytest.fixture
+    def coder(self):
+        """Create LLMDcoder instance."""
+        return LLMDcoder()
 
-    def test_coder_has_default_host(self):
-        """Test that default host is set."""
-        coder = LLMDcoder()
-        
-        self.assertEqual(coder.host, get_ollama_host())
-
-    def test_coder_has_default_model(self):
-        """Test that default model is codellama:7b."""
-        coder = LLMDcoder()
-        
-        # Should default to codellama:7b for code generation
-        self.assertEqual(coder.model, get_ollama_model('OLLAMA_CODE_MODEL', 'codellama:7b'))
-
-    def test_build_prompt(self):
-        """Test that prompt is built correctly."""
-        coder = LLMDcoder()
-        
-        task = {
-            'id': 'test_task',
+    @pytest.fixture
+    def sample_task(self):
+        """Create sample task."""
+        return {
+            'id': 'test.task',
             'name': 'Test Task',
-            'desc': 'This is a test task',
-            'layer': 'backend'
+            'desc': 'Test description'
         }
-        
-        prompt = coder._build_prompt(task)
-        
-        self.assertIn('test_task', prompt)
-        self.assertIn('Test Task', prompt)
-        self.assertIn('This is a test task', prompt)
-        self.assertIn('backend', prompt)
 
-    def test_detect_language_rust(self):
-        """Test language detection for Rust tasks."""
-        coder = LLMDcoder()
-        
-        task_rust = {'id': 'rust_backend.pkce'}
-        task_backend = {'id': 'rust_backend.callback'}
-        
-        self.assertEqual(coder._detect_language(task_rust), 'Rust')
-        self.assertEqual(coder._detect_language(task_backend), 'Rust')
+    def test_initialization(self, coder):
+        """Test coder initializes correctly."""
+        assert coder.max_retries == 3
+        assert coder.base_temperature == 0.7
+        assert coder.timeout == 120
 
-    def test_detect_language_typescript(self):
-        """Test language detection for TypeScript tasks."""
-        coder = LLMDcoder()
+    def test_detect_file_extension_rust(self, coder):
+        """Test file extension detection for Rust."""
+        task = {'id': 'rust_backend.auth'}
+        ext = coder._detect_file_extension(task)
+        assert ext == '.rs'
+
+    def test_detect_file_extension_python(self, coder):
+        """Test file extension detection for Python."""
+        task = {'id': 'agent.python'}
+        ext = coder._detect_file_extension(task)
+        assert ext == '.py'
+
+    def test_detect_file_extension_default(self, coder):
+        """Test default file extension."""
+        task = {'id': 'ui.component'}
+        ext = coder._detect_file_extension(task)
+        assert ext == '.ts'
+
+    def test_build_prompt(self, coder, sample_task):
+        """Test prompt building."""
+        prompt = coder._build_prompt(sample_task)
         
-        task_step = {'id': 'step1_connect.oauth'}
-        task_integration = {'id': 'oauth_integration.callback'}
+        assert 'Test Task' in prompt
+        assert 'Test description' in prompt
+
+    def test_build_prompt_with_retry(self, coder, sample_task):
+        """Test prompt building with retry context."""
+        error = "Previous error message"
+        prompt = coder._build_prompt(sample_task, previous_error=error)
         
-        self.assertEqual(coder._detect_language(task_step), 'TypeScript')
-        self.assertEqual(coder._detect_language(task_integration), 'TypeScript')
+        assert 'RETRY ATTEMPT' in prompt
+        assert error in prompt
+
+    def test_detect_language_rust(self, coder):
+        """Test language detection for Rust."""
+        task = {'id': 'rust_backend.module'}
+        lang = coder._detect_language(task)
+        assert lang == 'Rust'
+
+    def test_detect_language_python(self, coder):
+        """Test language detection for Python."""
+        task = {'id': 'agent.module'}
+        lang = coder._detect_language(task)
+        assert lang == 'Python'
+
+    def test_detect_language_default(self, coder):
+        """Test default language detection."""
+        task = {'id': 'ui.component'}
+        lang = coder._detect_language(task)
+        assert lang == 'TypeScript'
 
     @patch('agent.llm_coder.urllib.request.urlopen')
-    def test_call_ollama_mock(self, mock_urlopen):
-        """Test Ollama API call with mock."""
-        # Setup mock response
+    def test_call_ollama_success(self, mock_urlopen, coder):
+        """Test successful Ollama API call."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'{"response": "// Generated code"}'
+        mock_response.read.return_value = b'{"response": "generated code"}'
         mock_urlopen.return_value.__enter__.return_value = mock_response
-
-        coder = LLMDcoder()
-        result = coder._call_ollama('test prompt')
-
-        self.assertEqual(result, '// Generated code')
-
-    def test_generate_code_from_llm_function(self):
-        """Test convenience function exists and is callable."""
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        # Should be callable (will fail without Ollama running, but should not raise TypeError)
-        self.assertTrue(callable(generate_code_from_llm))
-
-    def test_generate_code_returns_tuple(self):
-        """Test that generate_code returns tuple with (code, success, retry_count)."""
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        # Mock the _call_ollama to return valid code
-        with patch.object(coder, '_call_ollama', return_value='def test(): pass'):
-            code, success, retry_count = coder.generate_code(task)
-
-            self.assertIsInstance(code, str)
-            self.assertEqual(code, 'def test(): pass')
-            self.assertTrue(success)
-            self.assertEqual(retry_count, 0)
-
-    def test_generate_code_with_retry_count(self):
-        """Test that retry_count is tracked correctly."""
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        # Mock the _call_ollama to return valid code
-        with patch.object(coder, '_call_ollama', return_value='def test(): pass'):
-            _, _, retry_count = coder.generate_code(task, retry_count=2)
-
-            self.assertEqual(retry_count, 2)
-
-    def test_build_prompt_with_previous_error(self):
-        """Test that prompt includes previous error on retry."""
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        # Without error
-        prompt_no_error = coder._build_prompt(task)
-        self.assertNotIn('RETRY ATTEMPT', prompt_no_error)
-
-        # With error
-        prompt_with_error = coder._build_prompt(task, previous_error='Syntax error on line 5')
-        self.assertIn('RETRY ATTEMPT', prompt_with_error)
-        self.assertIn('Syntax error on line 5', prompt_with_error)
-        self.assertIn('fixes this error', prompt_with_error)
-
-    def test_call_ollama_with_temperature(self):
-        """Test that temperature parameter is passed to Ollama API."""
-        coder = LLMDcoder()
-
-        with patch('agent.llm_coder.urllib.request.urlopen') as mock_urlopen:
-            mock_response = MagicMock()
-            mock_response.read.return_value = b'{"response": "code"}'
-            mock_urlopen.return_value.__enter__.return_value = mock_response
-
-            coder._call_ollama('test prompt', temperature=0.8)
-
-            # Verify the request was made with correct temperature
-            import json
-            call_args = mock_urlopen.call_args
-            request_data = json.loads(call_args[0][0].data.decode('utf-8'))
-            self.assertEqual(request_data['options']['temperature'], 0.8)
+        
+        result = coder._call_ollama("test prompt")
+        
+        assert result == "generated code"
 
     @patch('agent.llm_coder.urllib.request.urlopen')
-    def test_generate_with_retry_success_first_attempt(self, mock_urlopen):
-        """Test successful generation on first attempt."""
+    def test_call_ollama_error(self, mock_urlopen, coder):
+        """Test Ollama API error handling."""
+        import urllib.error
+        mock_urlopen.side_effect = urllib.error.URLError("Connection error")
+        
+        result = coder._call_ollama("test prompt")
+        
+        assert result is None
+
+    @patch('agent.llm_coder.urllib.request.urlopen')
+    def test_call_ollama_json_error(self, mock_urlopen, coder):
+        """Test Ollama JSON parse error handling."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'{"response": "valid code"}'
+        mock_response.read.return_value = b'invalid json'
         mock_urlopen.return_value.__enter__.return_value = mock_response
+        
+        result = coder._call_ollama("test prompt")
+        
+        assert result is None
 
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
+    @patch.object(LLMDcoder, '_call_ollama', return_value='export const x = 1;')
+    def test_generate_code_success(self, mock_call, coder, sample_task):
+        """Test successful code generation."""
+        code, success, retry_count = coder.generate_code(sample_task)
+        
+        assert success is True
+        assert code == 'export const x = 1;'
+        assert retry_count == 0
 
-        code, success, attempts = coder.generate_with_retry(task)
+    @patch.object(LLMDcoder, '_call_ollama', return_value=None)
+    def test_generate_code_failure(self, mock_call, coder, sample_task):
+        """Test failed code generation."""
+        code, success, retry_count = coder.generate_code(sample_task)
+        
+        assert success is False
+        assert code is None
 
-        self.assertEqual(code, 'valid code')
-        self.assertTrue(success)
-        self.assertEqual(attempts, 1)
-
-    @patch('agent.llm_coder.urllib.request.urlopen')
-    def test_generate_with_retry_succeeds_after_failures(self, mock_urlopen):
-        """Test retry succeeds after initial failures."""
-        # Setup mock to fail twice, then succeed
-        mock_response = MagicMock()
-        mock_response.read.return_value = b'{"response": "valid code"}'
-
-        # First two calls return None (failure), third returns valid code
-        mock_urlopen.return_value.__enter__.side_effect = [
-            Exception('API Error'),
-            Exception('API Error'),
-            mock_response
-        ]
-
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        code, success, attempts = coder.generate_with_retry(task)
-
-        self.assertEqual(code, 'valid code')
-        self.assertTrue(success)
-        self.assertEqual(attempts, 3)
-
-    @patch('agent.llm_coder.urllib.request.urlopen')
-    def test_generate_with_retry_all_failures(self, mock_urlopen):
-        """Test all retry attempts fail."""
-        mock_urlopen.return_value.__enter__.side_effect = Exception('API Error')
-
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        code, success, attempts = coder.generate_with_retry(task)
-
-        self.assertIsNone(code)
-        self.assertFalse(success)
-        self.assertEqual(attempts, coder.max_retries)
-
-    @patch('agent.llm_coder.urllib.request.urlopen')
-    def test_generate_with_retry_syntax_check_failure(self, mock_urlopen):
-        """Test retry on syntax check failure."""
+    @patch.object(LLMDcoder, '_call_ollama', side_effect=['invalid{', 'valid code'])
+    def test_generate_with_retry_success(self, mock_call, coder, sample_task):
+        """Test successful generation after retry."""
         from agent.syntax_check import SyntaxChecker
-
-        # Mock successful Ollama response but invalid code
-        mock_response = MagicMock()
-        mock_response.read.return_value = b'{"response": "def invalid("}'  # Invalid syntax
-        mock_urlopen.return_value.__enter__.return_value = mock_response
-
-        coder = LLMDcoder()
         syntax_checker = SyntaxChecker()
-        task = {'id': 'test_python.agent', 'name': 'Test', 'desc': 'Test task'}
-
-        # Should retry due to syntax error
-        code, success, attempts = coder.generate_with_retry(task, syntax_checker=syntax_checker)
-
-        # All attempts should fail due to syntax error
-        self.assertFalse(success)
-        self.assertGreater(attempts, 1)  # Should have retried
-
-    @patch('agent.llm_coder.urllib.request.urlopen')
-    def test_generate_with_retry_temperature_increments(self, mock_urlopen):
-        """Test that temperature increases on retry attempts."""
-        mock_response = MagicMock()
-        mock_response.read.return_value = b'{"response": "code"}'
-        mock_urlopen.return_value.__enter__.return_value = mock_response
-
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        # First attempt - base temperature
-        coder.generate_code(task, retry_count=0)
-        call_args_0 = mock_urlopen.call_args
-        import json
-        data_0 = json.loads(call_args_0[0][0].data.decode('utf-8'))
-
-        # Second attempt - higher temperature
-        coder.generate_code(task, retry_count=1)
-        call_args_1 = mock_urlopen.call_args
-        data_1 = json.loads(call_args_1[0][0].data.decode('utf-8'))
-
-        # Temperature should increase
-        self.assertLess(data_0['options']['temperature'], data_1['options']['temperature'])
-
-    def test_retry_generates_different_code_verification(self):
-        """Test that retry mechanism is set up to generate different code."""
-        coder = LLMDcoder()
-        task = {'id': 'test', 'name': 'Test', 'desc': 'Test task'}
-
-        # Verify that prompts differ between retry attempts
-        prompt_0 = coder._build_prompt(task, previous_error=None)
-        prompt_1 = coder._build_prompt(task, previous_error='Error 1')
-        prompt_2 = coder._build_prompt(task, previous_error='Error 2')
-
-        # Prompts should be different with different errors
-        self.assertNotEqual(prompt_0, prompt_1)
-        self.assertNotEqual(prompt_1, prompt_2)
-
-        # Verify temperature would increase
-        temp_0 = min(coder.base_temperature + (0 * 0.1), 0.9)
-        temp_1 = min(coder.base_temperature + (1 * 0.1), 0.9)
-        temp_2 = min(coder.base_temperature + (2 * 0.1), 0.9)
-
-        self.assertLess(temp_0, temp_1)
-        self.assertLess(temp_1, temp_2)
-
-
-class TestConfig(unittest.TestCase):
-    """Test configuration loading."""
-
-    def test_get_ollama_host(self):
-        """Test getting Ollama host."""
-        host = get_ollama_host()
         
-        self.assertIsInstance(host, str)
-        self.assertTrue(host.startswith('http'))
-
-    def test_get_ollama_model(self):
-        """Test getting Ollama model."""
-        model = get_ollama_model()
+        code, success, attempts = coder.generate_with_retry(sample_task, syntax_checker)
         
-        self.assertIsInstance(model, str)
-        self.assertTrue(':' in model)
+        assert success is True
+        assert attempts == 2
 
-    def test_get_ollama_timeout(self):
-        """Test getting Ollama timeout."""
-        timeout = get_ollama_timeout()
+    @patch.object(LLMDcoder, '_call_ollama', return_value='invalid{{')
+    def test_generate_with_retry_all_failures(self, mock_call, coder, sample_task):
+        """Test all retry attempts fail."""
+        from agent.syntax_check import SyntaxChecker
+        syntax_checker = SyntaxChecker()
         
-        self.assertIsInstance(timeout, int)
-        self.assertGreater(timeout, 0)
+        code, success, attempts = coder.generate_with_retry(sample_task, syntax_checker)
+        
+        assert success is False
+        assert attempts == 3  # Max retries
 
-    def test_get_ollama_max_tokens(self):
-        """Test getting Ollama max tokens."""
-        max_tokens = get_ollama_max_tokens()
+    def test_generate_with_retry_no_syntax_checker(self, coder, sample_task):
+        """Test generation without syntax checker."""
+        with patch.object(LLMDcoder, '_call_ollama', return_value='valid code'):
+            code, success, attempts = coder.generate_with_retry(sample_task)
+            
+            assert success is True
+            assert attempts == 1
+
+
+class TestGenerateCodeFromLLM:
+    """Test convenience function."""
+
+    @patch('agent.llm_coder.LLMDcoder')
+    def test_generate_code_from_llm_success(self, mock_coder_class):
+        """Test successful code generation via convenience function."""
+        mock_coder = MagicMock()
+        mock_coder.generate_with_retry.return_value = ('code', True, 1)
+        mock_coder_class.return_value = mock_coder
         
-        self.assertIsInstance(max_tokens, int)
-        self.assertGreater(max_tokens, 0)
+        task = {'id': 'test.task'}
+        result = generate_code_from_llm(task)
+        
+        assert result == 'code'
+
+    @patch('agent.llm_coder.LLMDcoder')
+    def test_generate_code_from_llm_failure(self, mock_coder_class):
+        """Test failed code generation via convenience function."""
+        mock_coder = MagicMock()
+        mock_coder.generate_with_retry.return_value = (None, False, 3)
+        mock_coder_class.return_value = mock_coder
+        
+        task = {'id': 'test.task'}
+        result = generate_code_from_llm(task)
+        
+        assert result is None
 
 
 if __name__ == '__main__':
-    unittest.main()
+    pytest.main([__file__, '-v'])

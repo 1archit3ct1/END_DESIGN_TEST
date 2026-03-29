@@ -1,147 +1,131 @@
-#!/usr/bin/env python3
 """
-Test: task_queue.py returns tasks in correct DAG order.
+Test Task Queue — Task ordering tests.
 """
 
-import sys
-import unittest
-from pathlib import Path
-
-# Add agent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import pytest
+from collections import deque
 
 from agent.task_queue import TaskQueue
 
 
-class TestTaskQueue(unittest.TestCase):
-    """Test TaskQueue functionality."""
+class TestTaskQueue:
+    """Test Task Queue functionality."""
 
-    def test_queue_initializes_empty(self):
-        """Test that TaskQueue initializes empty."""
-        queue = TaskQueue()
-        
-        self.assertTrue(queue.is_empty())
-        self.assertIsNone(queue.get_next_pending_task())
+    @pytest.fixture
+    def queue(self):
+        """Create TaskQueue instance."""
+        return TaskQueue()
 
-    def test_load_tasks(self):
-        """Test that tasks are loaded correctly."""
-        queue = TaskQueue()
-        
-        tasks = [
-            {'id': 'task1', 'status': 'pending'},
-            {'id': 'task2', 'status': 'pending'},
-            {'id': 'task3', 'status': 'done'}
+    @pytest.fixture
+    def sample_tasks(self):
+        """Create sample task list."""
+        return [
+            {'id': 'task1', 'name': 'Task 1', 'status': 'pending'},
+            {'id': 'task2', 'name': 'Task 2', 'status': 'pending'},
+            {'id': 'task3', 'name': 'Task 3', 'status': 'done'},
+            {'id': 'task4', 'name': 'Task 4', 'status': 'pending'},
         ]
-        
-        queue.load_tasks(tasks)
-        
-        self.assertFalse(queue.is_empty())
 
-    def test_get_next_pending_task(self):
-        """Test that next pending task is returned."""
-        queue = TaskQueue()
+    def test_initialization(self, queue):
+        """Test queue initializes correctly."""
+        assert queue.tasks == []
+        assert queue.queue == deque()
+        assert queue.is_empty() is True
+
+    def test_load_tasks(self, queue, sample_tasks):
+        """Test loading tasks into queue."""
+        queue.load_tasks(sample_tasks)
         
-        tasks = [
-            {'id': 'task1', 'status': 'pending'},
-            {'id': 'task2', 'status': 'pending'},
-            {'id': 'task3', 'status': 'done'}
-        ]
+        assert len(queue.tasks) == 4
+        assert len(queue.queue) == 3  # Only pending tasks
+
+    def test_load_tasks_empty(self, queue):
+        """Test loading empty task list."""
+        queue.load_tasks([])
         
-        queue.load_tasks(tasks)
+        assert queue.tasks == []
+        assert queue.is_empty() is True
+
+    def test_get_next_pending_task(self, queue, sample_tasks):
+        """Test getting next pending task."""
+        queue.load_tasks(sample_tasks)
         
         task = queue.get_next_pending_task()
         
-        self.assertIsNotNone(task)
-        self.assertEqual(task['status'], 'pending')
-        self.assertEqual(task['id'], 'task1')
+        assert task is not None
+        assert task['id'] == 'task1'
+        assert len(queue.queue) == 2
 
-    def test_get_all_pending_tasks(self):
-        """Test that all pending tasks are returned in order."""
-        queue = TaskQueue()
+    def test_get_next_pending_task_empty(self, queue):
+        """Test getting task from empty queue."""
+        task = queue.get_next_pending_task()
         
-        tasks = [
-            {'id': 'task1', 'status': 'pending'},
-            {'id': 'task2', 'status': 'done'},
-            {'id': 'task3', 'status': 'pending'},
-            {'id': 'task4', 'status': 'pending'}
-        ]
-        
-        queue.load_tasks(tasks)
-        
-        # Should only get pending tasks
-        task1 = queue.get_next_pending_task()
-        task2 = queue.get_next_pending_task()
-        task3 = queue.get_next_pending_task()
-        task4 = queue.get_next_pending_task()
-        
-        self.assertEqual(task1['id'], 'task1')
-        self.assertEqual(task2['id'], 'task3')
-        self.assertEqual(task3['id'], 'task4')
-        self.assertIsNone(task4)  # Queue empty
+        assert task is None
 
-    def test_add_task(self):
+    def test_is_empty(self, queue):
+        """Test empty check."""
+        assert queue.is_empty() is True
+        
+        queue.load_tasks([{'id': 'task1', 'status': 'pending'}])
+        assert queue.is_empty() is False
+
+    def test_add_task(self, queue):
         """Test adding task to queue."""
-        queue = TaskQueue()
-        
         task = {'id': 'new_task', 'status': 'pending'}
         queue.add_task(task)
         
-        self.assertFalse(queue.is_empty())
-        
-        retrieved = queue.get_next_pending_task()
-        self.assertEqual(retrieved['id'], 'new_task')
+        assert len(queue.queue) == 1
+        assert queue.queue[0]['id'] == 'new_task'
 
-    def test_add_non_pending_task(self):
-        """Test that non-pending tasks are not added."""
-        queue = TaskQueue()
+    def test_add_task_non_pending(self, queue):
+        """Test adding non-pending task doesn't add to queue."""
+        task = {'id': 'done_task', 'status': 'done'}
+        queue.add_task(task)
         
-        task_done = {'id': 'done_task', 'status': 'done'}
-        queue.add_task(task_done)
-        
-        self.assertTrue(queue.is_empty())
+        assert len(queue.queue) == 0
 
-    def test_requeue_task(self):
+    def test_requeue_task(self, queue):
         """Test requeuing task for retry."""
-        queue = TaskQueue()
+        queue.load_tasks([{'id': 'task1', 'status': 'pending'}])
+        queue.get_next_pending_task()  # Remove first task
         
-        task1 = {'id': 'task1', 'status': 'pending'}
-        task2 = {'id': 'task2', 'status': 'pending'}
+        retry_task = {'id': 'retry_task', 'status': 'pending'}
+        queue.requeue_task(retry_task)
         
-        queue.add_task(task1)
-        queue.add_task(task2)
-        
-        # Requeue task1 to front
-        queue.requeue_task(task1)
-        
-        # Should get task1 first
-        retrieved = queue.get_next_pending_task()
-        self.assertEqual(retrieved['id'], 'task1')
+        assert len(queue.queue) == 1
+        assert queue.queue[0]['id'] == 'retry_task'  # Added to front
 
-
-class TestTaskQueueTopologicalSort(unittest.TestCase):
-    """Test TaskQueue topological ordering."""
-
-    def test_pending_tasks_sorted_first(self):
-        """Test that pending tasks are returned before others."""
-        queue = TaskQueue()
+    def test_task_order_preserved(self, queue, sample_tasks):
+        """Test that task order is preserved."""
+        queue.load_tasks(sample_tasks)
         
-        tasks = [
-            {'id': 'task1', 'status': 'done'},
-            {'id': 'task2', 'status': 'pending'},
-            {'id': 'task3', 'status': 'blocked'},
-            {'id': 'task4', 'status': 'pending'}
-        ]
-        
-        queue.load_tasks(tasks)
-        
-        # Should only get pending tasks
         task1 = queue.get_next_pending_task()
         task2 = queue.get_next_pending_task()
+        task4 = queue.get_next_pending_task()
         
-        self.assertEqual(task1['status'], 'pending')
-        self.assertEqual(task2['status'], 'pending')
-        self.assertTrue(queue.is_empty())
+        assert task1['id'] == 'task1'
+        assert task2['id'] == 'task2'
+        assert task4['id'] == 'task4'
+
+    def test_only_pending_tasks_loaded(self, queue, sample_tasks):
+        """Test that only pending tasks are added to queue."""
+        queue.load_tasks(sample_tasks)
+        
+        for task in queue.queue:
+            assert task['status'] == 'pending'
+
+    def test_multiple_load_tasks(self, queue):
+        """Test loading tasks multiple times."""
+        tasks1 = [{'id': 'task1', 'status': 'pending'}]
+        tasks2 = [{'id': 'task2', 'status': 'pending'}]
+        
+        queue.load_tasks(tasks1)
+        queue.load_tasks(tasks2)
+        
+        # Second load replaces first
+        assert len(queue.tasks) == 1
+        assert queue.tasks[0]['id'] == 'task2'
 
 
 if __name__ == '__main__':
-    unittest.main()
+    pytest.main([__file__, '-v'])
