@@ -1,5 +1,7 @@
 """
 State Manager — Read/write task_status.json.
+
+Supports tracking multiple generated files per task.
 """
 
 import json
@@ -96,14 +98,15 @@ class StateManager:
         """
         return self._update_task_status(task_id, 'running')
 
-    def mark_task_done(self, task_id: str, file_path: str = None, test_passed: bool = True) -> bool:
+    def mark_task_done(self, task_id: str, file_path: str = None, test_passed: bool = True, file_paths: List[str] = None) -> bool:
         """Mark task as done.
-        
+
         Args:
             task_id: Task ID
-            file_path: Path to generated file
+            file_path: Path to generated file (single file, legacy)
             test_passed: Whether task-specific test passed
-            
+            file_paths: List of paths to generated files (multi-file support)
+
         Returns:
             True if updated successfully
         """
@@ -114,6 +117,8 @@ class StateManager:
                 task['updatedAt'] = datetime.now().isoformat()
                 if file_path:
                     task['generatedFile'] = file_path
+                if file_paths:
+                    task['generatedFiles'] = file_paths
                 task['testPassed'] = test_passed
                 break
 

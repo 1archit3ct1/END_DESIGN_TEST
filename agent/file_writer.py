@@ -2,13 +2,15 @@
 File Writer — Deterministic file I/O to ./output/.
 
 Adds auto-generated header comments to all generated files.
+Supports single-file and multi-file task outputs.
 """
 
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
 
 from .logger import setup_logger
+from .multi_file_handler import MultiFileHandler
 
 logger = setup_logger(__name__)
 
@@ -117,12 +119,13 @@ class FileWriter:
 
     def __init__(self, output_dir: Path):
         """Initialize file writer.
-        
+
         Args:
             output_dir: Output directory path
         """
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.multi_file_handler = MultiFileHandler(output_dir)
 
     def write_file(self, task: Dict[str, Any], code: str) -> Optional[Path]:
         """Write code to file with auto-generated header.
@@ -134,6 +137,16 @@ class FileWriter:
         Returns:
             Path to written file or None
         """
+        # Check if this is a multi-file task
+        if self.multi_file_handler.detect_multi_file_task(task):
+            results = self.multi_file_handler.write_multi_files(task, code, self)
+            # Return primary file path (first successful write)
+            for path, success in results:
+                if success:
+                    return path
+            return None
+        
+        # Single file task - use original logic
         file_path = self._get_file_path(task)
         if not file_path:
             return None
@@ -156,6 +169,24 @@ class FileWriter:
         except Exception as e:
             logger.error(f"Failed to write file {file_path}: {e}")
             return None
+
+    def write_files(self, task: Dict[str, Any], code: str) -> List[Tuple[Path, bool]]:
+        """Write code to one or more files with auto-generated header.
+
+        Args:
+            task: Task dictionary
+            code: Generated code string
+
+        Returns:
+            List of (path, success) tuples
+        """
+        # Check if this is a multi-file task
+        if self.multi_file_handler.detect_multi_file_task(task):
+            return self.multi_file_handler.write_multi_files(task, code, self)
+        
+        # Single file task
+        path = self.write_file(task, code)
+        return [(path, path is not None)] if path else []
 
     def _generate_header(self, task: Dict[str, Any], extension: str) -> str:
         """Generate auto-generated header for file.
