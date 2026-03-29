@@ -1,5 +1,7 @@
 // parser.js — converts design specs into layered DAGs
-// Supports: freeform text, JSON DAG, markdown, UI descriptions
+// Supports: HTML (data-key), JSON DAG, freeform text, markdown, UI descriptions
+
+import { parseHTMLDOM, itemsToDAGLayers } from './html-dom-parser.js'
 
 /**
  * Top-level entry. Returns an array of layers, each with { label, nodes[] }.
@@ -7,6 +9,11 @@
  */
 export function parseDesignToDAG(text, type = 'freeform') {
   if (!text || !text.trim()) return []
+
+  // Detect HTML and use DOM parser
+  if (isHTML(text)) {
+    return parseHTMLWithDOM(text)
+  }
 
   if (type === 'dag') {
     try {
@@ -17,6 +24,37 @@ export function parseDesignToDAG(text, type = 'freeform') {
     }
   }
 
+  return heuristicParse(text)
+}
+
+/**
+ * Check if text is HTML.
+ */
+function isHTML(text) {
+  const trimmed = text.trim()
+  return trimmed.startsWith('<') && (
+    trimmed.startsWith('<!DOCTYPE') ||
+    trimmed.startsWith('<!doctype') ||
+    trimmed.startsWith('<html') ||
+    trimmed.includes('data-key=') ||
+    trimmed.includes('<head>') ||
+    trimmed.includes('<body>')
+  )
+}
+
+/**
+ * Parse HTML using DOM parser for data-key extraction.
+ */
+function parseHTMLWithDOM(text) {
+  try {
+    const result = parseHTMLDOM(text)
+    if (result.items && result.items.length > 0) {
+      return itemsToDAGLayers(result.items)
+    }
+  } catch (e) {
+    console.warn('DOM parser failed, falling back to heuristic:', e.message)
+  }
+  // Fallback to heuristic if DOM parsing fails
   return heuristicParse(text)
 }
 
