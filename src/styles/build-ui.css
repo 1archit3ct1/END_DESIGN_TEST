@@ -1,0 +1,467 @@
+/* Build UI Styles - Console, File Tree, Code Preview */
+
+/* Build Console Wrapper */
+.build-console-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1e1e1e;
+  border-top: 2px solid #333;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  color: #d4d4d4;
+  z-index: 1000;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.build-console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+.build-console-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.console-icon {
+  font-size: 16px;
+}
+
+.build-console-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-idle {
+  background: #4a4a4a;
+  color: #fff;
+}
+
+.status-running {
+  background: #0078d4;
+  color: #fff;
+  animation: pulse 1.5s infinite;
+}
+
+.status-done {
+  background: #107c10;
+  color: #fff;
+}
+
+.status-error {
+  background: #c50f1f;
+  color: #fff;
+}
+
+.status-paused {
+  background: #ff8c00;
+  color: #fff;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Buttons */
+.btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-start {
+  background: #107c10;
+  color: #fff;
+}
+
+.btn-start:hover:not(:disabled) {
+  background: #0f6b0f;
+}
+
+.btn-stop {
+  background: #c50f1f;
+  color: #fff;
+}
+
+.btn-stop:hover {
+  background: #a80d1a;
+}
+
+.btn-download {
+  background: #0078d4;
+  color: #fff;
+}
+
+.btn-download:hover:not(:disabled) {
+  background: #0063b1;
+}
+
+.btn-open {
+  background: #3c3c3c;
+  color: #d4d4d4;
+}
+
+.btn-open:hover:not(:disabled) {
+  background: #4a4a4a;
+}
+
+/* Build Console Body */
+.build-console-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Progress Section */
+.build-progress {
+  padding: 12px 16px;
+  background: #2d2d30;
+  border-bottom: 1px solid #333;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.progress-text {
+  color: #888;
+}
+
+.progress-percent {
+  font-weight: 700;
+  color: #0078d4;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #3c3c3c;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0078d4, #00bcf2);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #888;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Build Logs */
+.build-logs {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+}
+
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  font-size: 12px;
+  color: #888;
+}
+
+.logs-count {
+  background: #3c3c3c;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.logs-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.logs-empty {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.log-entry {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #2a2a2a;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+}
+
+.log-timestamp {
+  color: #666;
+  white-space: nowrap;
+  min-width: 70px;
+}
+
+.log-message {
+  flex: 1;
+  word-break: break-word;
+}
+
+.log-info {
+  color: #9cdcfe;
+}
+
+.log-success {
+  background: rgba(16, 124, 16, 0.1);
+  color: #6a9955;
+}
+
+.log-warn {
+  background: rgba(255, 140, 0, 0.1);
+  color: #dcdcaa;
+}
+
+.log-error {
+  background: rgba(197, 15, 31, 0.1);
+  color: #f48771;
+}
+
+/* File Tree Wrapper */
+.file-tree-wrapper {
+  border: 1px solid #333;
+  background: #252526;
+  margin-bottom: 10px;
+}
+
+.file-tree-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #2d2d30;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+  color: #fff;
+}
+
+.file-count {
+  font-size: 11px;
+  color: #888;
+  background: #3c3c3c;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.file-tree-content {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.file-tree-empty {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.file-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.file-tree-item:hover {
+  background: #2a2d2e;
+}
+
+.file-tree-item.selected {
+  background: #094771;
+}
+
+.file-icon {
+  font-size: 14px;
+}
+
+.file-name {
+  flex: 1;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Code Preview Wrapper */
+.code-preview-wrapper {
+  border: 1px solid #333;
+  background: #1e1e1e;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.code-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+.code-preview-header .file-icon {
+  margin-right: 6px;
+}
+
+.code-preview-header .file-name {
+  font-weight: 600;
+  color: #fff;
+  margin-right: 10px;
+}
+
+.language-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #0078d4;
+  color: #fff;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.no-file {
+  color: #888;
+  font-style: italic;
+}
+
+.btn-copy {
+  padding: 4px 10px;
+  background: #3c3c3c;
+  border: none;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-copy:hover {
+  background: #4a4a4a;
+}
+
+.code-preview-content {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.code-preview-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.code-preview-content code {
+  color: #d4d4d4;
+}
+
+.code-empty {
+  color: #666;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Scrollbar */
+.logs-content::-webkit-scrollbar,
+.file-tree-content::-webkit-scrollbar,
+.code-preview-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.logs-content::-webkit-scrollbar-track,
+.file-tree-content::-webkit-scrollbar-track,
+.code-preview-content::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.logs-content::-webkit-scrollbar-thumb,
+.file-tree-content::-webkit-scrollbar-thumb,
+.code-preview-content::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+.logs-content::-webkit-scrollbar-thumb:hover,
+.file-tree-content::-webkit-scrollbar-thumb:hover,
+.code-preview-content::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .build-console-controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}

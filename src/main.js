@@ -19,6 +19,7 @@ import { revokeToken } from './core/oauth-revoke.js'
 import { syncStatus } from './core/status-sync.js'
 import { checkGate } from './core/workflow-gate.js'
 import { expireCredentials, setupWindowCloseExpiry } from './core/credential-lifetime.js'
+import { initBuildUI, getBuildState, addGeneratedFile, setTotalTasks } from './cli/build-ui.js'
 
 // ── STATE ─────────────────────────────────────────────────────────────
 let currentLayers = []
@@ -30,6 +31,9 @@ document.getElementById('app').innerHTML = buildLayout()
 
 // Setup credential expiry on window close
 setupWindowCloseExpiry()
+
+// Initialize build UI
+initBuildUI()
 
 // Wire node select → show node output in right panel
 setNodeSelectHandler(node => {
